@@ -32,8 +32,38 @@ window.addEventListener("resize", () => { resize(); buildParticles(); });
 let mouse = { x: -9999, y: -9999 };
 document.addEventListener("mousemove", (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
 document.addEventListener("mouseleave", () => { mouse.x = -9999; mouse.y = -9999; });
+document.addEventListener("touchmove", (e) => {
+  const t = e.touches[0];
+  mouse.x = t.clientX;
+  mouse.y = t.clientY;
+}, { passive: true });
+document.addEventListener("touchend", () => { mouse.x = -9999; mouse.y = -9999; });
 
 // ─── ShortPoint logo as a bitmap mask ─────────────────────────────────────────
+
+// ─── Rasterize icon only (geometric S mark) — used on mobile ─────────────────
+function rasterizeIconOnly(targetW, targetH) {
+  const offscreen = document.createElement("canvas");
+  offscreen.width = targetW;
+  offscreen.height = targetH;
+  const c = offscreen.getContext("2d");
+
+  const sx = targetW / 24;
+  const sy = targetH / 32;
+  c.setTransform(sx, 0, 0, sy, 0, 0);
+
+  c.fillStyle = "#fff";
+  c.strokeStyle = "#fff";
+  c.lineWidth = 0.8;
+  c.lineJoin = "round";
+
+  const iconPath = new Path2D("M4.677 18.254h8.715v4.725H0V.429h13.392v4.725H4.677v13.1zm5.952-4.295V9.234H24.02v22.55H10.629V27.06h8.715v-13.1h-8.715z");
+  c.fill(iconPath);
+  c.stroke(iconPath);
+
+  return c.getImageData(0, 0, targetW, targetH);
+}
+
 // ─── Rasterize full "shortpoint" text logo ────────────────────────────────────
 function rasterizeFullLogo(targetW, targetH) {
   const offscreen = document.createElement("canvas");
@@ -137,18 +167,20 @@ class Particle {
 
 // ─── Build particles from logo mask ───────────────────────────────────────────
 function buildParticles() {
+  const isMobile = W < 600;
+
   // Smaller font = denser grid = more readable logo
-  fontSize = W < 600 ? 7 : W < 1000 ? 9 : 11;
+  fontSize = isMobile ? 8 : W < 1000 ? 9 : 11;
   charWidths = measureCharWidths(fontSize);
 
-  // Get a representative char width (monospace, so all should be ~equal)
   const charW = charWidths.values().next().value || fontSize * 0.6;
   const charH = fontSize * 1.2;
 
-  // Calculate logo pixel dimensions — aim for the logo to fill ~75% of width
-  const logoAspect = 186 / 32; // from viewBox
-  const maxLogoW = W * 0.75;
-  const maxLogoH = H * 0.5;
+  // On mobile: icon only (nearly square, looks great small)
+  // On desktop: full horizontal wordmark
+  const logoAspect = isMobile ? (24 / 32) : (186 / 32);
+  const maxLogoW = W * (isMobile ? 0.5 : 0.75);
+  const maxLogoH = H * (isMobile ? 0.45 : 0.5);
   let logoW = maxLogoW;
   let logoH = logoW / logoAspect;
   if (logoH > maxLogoH) {
@@ -164,10 +196,12 @@ function buildParticles() {
   const superSample = 4;
   const hiResW = cols * superSample;
   const hiResH = rows * superSample;
-  const imageData = rasterizeFullLogo(hiResW, hiResH);
+  const imageData = isMobile
+    ? rasterizeIconOnly(hiResW, hiResH)
+    : rasterizeFullLogo(hiResW, hiResH);
   const pixels = imageData.data;
 
-  // Downsample: a grid cell is "filled" if ANY hi-res pixel in its region is opaque
+  // Downsample: a grid cell is "filled" if enough sub-pixels are opaque
   function isCellFilled(col, row) {
     const x0 = col * superSample;
     const y0 = row * superSample;
@@ -178,7 +212,6 @@ function buildParticles() {
         if (pixels[idx + 3] > 64) filled++;
       }
     }
-    // Cell is filled if at least 25% of sub-pixels are opaque
     return filled >= superSample * superSample * 0.25;
   }
 
@@ -188,8 +221,8 @@ function buildParticles() {
 
   particles = [];
 
-  // Icon boundary: icon occupies roughly x=0 to x=26 out of 186 viewBox width
-  const iconBoundaryCols = Math.floor(cols * (26 / 186));
+  // Icon boundary (only relevant for full logo on desktop)
+  const iconBoundaryCols = isMobile ? cols : Math.floor(cols * (26 / 186));
 
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
@@ -199,7 +232,7 @@ function buildParticles() {
       const y = offsetY + row * charH;
       const char = CHAR_POOL[Math.floor(Math.random() * CHAR_POOL.length)];
 
-      // Color: icon mark is blue, text is darker
+      // On mobile everything is blue (icon only); on desktop icon=blue, text=gray
       const isIcon = col < iconBoundaryCols;
       const color = isIcon ? BRAND_BLUE : BRAND_DARK;
 

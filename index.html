@@ -17,7 +17,7 @@
       height: 100vh;
       pointer-events: none;
     }
-    #info, #shortpoint {
+    #footer {
       position: fixed;
       left: 50%;
       transform: translateX(-50%);
@@ -26,23 +26,35 @@
       font-family: 'SF Mono', 'Fira Code', monospace;
       text-align: center;
       z-index: 10;
+      bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 90%;
+      max-width: 600px;
     }
-    #info { bottom: 50px; }
-    #shortpoint { bottom: 20px; }
-    #info a, #shortpoint a {
+    #footer a {
       color: rgba(255,255,255,0.5);
       pointer-events: auto;
     }
+    @media (max-width: 600px) {
+      #footer { font-size: 10px; gap: 8px; bottom: 12px; }
+    }
 
-    a {
-      cursor: pointer;
+    a { cursor: pointer; }
+    .mobile-only { display: none; }
+    @media (hover: none) and (pointer: coarse) {
+      .desktop-only { display: none; }
+      .mobile-only { display: inline; }
     }
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
-  <div id="shortpoint"><a href="https://www.shortpoint.com">ShortPoint</a> — Design beautiful SharePoint pages in minutes, not months. No coding required.</div>
-  <div id="info">move your mouse to interact &middot; powered by <a href="https://github.com/chenglou/pretext">@chenglou/pretext</a></div>
+  <div id="footer">
+    <div id="info"><span class="desktop-only">move your mouse</span><span class="mobile-only">drag your finger</span> to interact &middot; powered by <a href="https://github.com/chenglou/pretext">@chenglou/pretext</a></div>
+    <div id="shortpoint"><a href="https://www.shortpoint.com">ShortPoint</a> — Design beautiful SharePoint pages in minutes, not months. No coding required.</div>
+  </div>
   <script type="module" src="./main.js"></script>
 </body>
 </html>
