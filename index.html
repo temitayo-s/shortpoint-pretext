@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShortPoint ASCII Art — Powered by Pretext</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0e1a;
+      overflow: hidden;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+    }
+    #info, #shortpoint {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.3);
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      text-align: center;
+      z-index: 10;
+    }
+    #info { bottom: 50px; }
+    #shortpoint { bottom: 20px; }
+    #info a, #shortpoint a {
+      color: rgba(255,255,255,0.5);
+      pointer-events: auto;
+    }
+
+    a {
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div id="shortpoint"><a href="https://www.shortpoint.com">ShortPoint</a> — Design beautiful SharePoint pages in minutes, not months. No coding required.</div>
+  <div id="info">move your mouse to interact &middot; powered by <a href="https://github.com/chenglou/pretext">@chenglou/pretext</a></div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
