@@ -135,6 +135,18 @@ class Particle {
     this.vy = 0;
   }
 
+  applyRepulsion(cx, cy, radius, radiusSq, force) {
+    const mdx = this.x - cx;
+    const mdy = this.y - cy;
+    const distSq = mdx * mdx + mdy * mdy;
+    if (distSq < radiusSq && distSq > 0) {
+      const dist = Math.sqrt(distSq);
+      const f = (radius - dist) / radius * force / dist;
+      this.vx += mdx * f;
+      this.vy += mdy * f;
+    }
+  }
+
   update() {
     // Spring toward target
     const dx = this.targetX - this.x;
@@ -142,16 +154,11 @@ class Particle {
     this.vx += dx * SETTLE_SPEED;
     this.vy += dy * SETTLE_SPEED;
 
-    // Mouse repulsion (squared distance to avoid sqrt)
-    const mdx = this.x - mouse.x;
-    const mdy = this.y - mouse.y;
-    const distSq = mdx * mdx + mdy * mdy;
-    if (distSq < MOUSE_RADIUS_SQ && distSq > 0) {
-      const dist = Math.sqrt(distSq);
-      const f = (MOUSE_RADIUS - dist) / MOUSE_RADIUS * MOUSE_FORCE_SCALED / dist;
-      this.vx += mdx * f;
-      this.vy += mdy * f;
-    }
+    // Mouse repulsion
+    this.applyRepulsion(mouse.x, mouse.y, MOUSE_RADIUS, MOUSE_RADIUS_SQ, MOUSE_FORCE_SCALED);
+
+    // Ball repulsion (collision radius is larger than visual radius)
+    this.applyRepulsion(ball.cx, ball.cy, ball.collisionRadius, ball.collisionRadiusSq, ball.force);
 
     this.vx *= FRICTION;
     this.vy *= FRICTION;
@@ -243,6 +250,41 @@ function buildParticles() {
 
 buildParticles();
 
+// ─── Bouncing ball ───────────────────────────────────────────────────────────
+const ball = {
+  x: W * 0.25,
+  y: H * 0.25,
+  vx: 5,
+  vy: 4,
+  radius: 15,
+  radiusSq: 15 * 15,
+  force: MOUSE_FORCE_SCALED * 4,
+  collisionRadius: 80,
+  collisionRadiusSq: 80 * 80,
+  active: true,
+  cx: 0, cy: 0,
+};
+
+function updateBall() {
+  ball.x += ball.vx;
+  ball.y += ball.vy;
+
+  if (ball.x - ball.radius < 0) { ball.x = ball.radius; ball.vx *= -1; }
+  if (ball.x + ball.radius > W) { ball.x = W - ball.radius; ball.vx *= -1; }
+  if (ball.y - ball.radius < 0) { ball.y = ball.radius; ball.vy *= -1; }
+  if (ball.y + ball.radius > H) { ball.y = H - ball.radius; ball.vy *= -1; }
+
+  ball.cx = ball.x;
+  ball.cy = ball.y;
+}
+
+function drawBall() {
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+  ctx.fillStyle = "rgb(255, 255, 255)";
+  ctx.fill();
+}
+
 // ─── Background floating characters ──────────────────────────────────────────
 class BackgroundChar {
   constructor() {
@@ -292,6 +334,10 @@ function render() {
     p.update();
     p.draw(ctx);
   }
+
+  // Bouncing ball
+  updateBall();
+  drawBall();
 
   // Reset shadow
   ctx.shadowColor = "transparent";
